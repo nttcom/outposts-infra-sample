@@ -1,5 +1,5 @@
-import * as lambda from 'aws-lambda';
-import * as aws from 'aws-sdk';
+import * as lambda from "aws-lambda";
+import * as aws from "aws-sdk";
 
 // ModifySubnetAttribute を呼び出すためのクライアントを初期化しておく
 const ec2 = new aws.EC2({
@@ -8,17 +8,17 @@ const ec2 = new aws.EC2({
 });
 
 // ModifySubnetAttribute を呼び出して CoIP を設定するように subnet の設定を変更する。
-export const modifySubnetConfig = async (
+const modifySubnetConfig = async (
   event:
     | lambda.CloudFormationCustomResourceCreateEvent
-    | lambda.CloudFormationCustomResourceUpdateEvent,
+    | lambda.CloudFormationCustomResourceUpdateEvent
 ): Promise<lambda.CloudFormationCustomResourceResponse> => {
   const { subnetId, coIpPoolId } = event.ResourceProperties;
   try {
-    if (typeof subnetId !== 'string') {
+    if (typeof subnetId !== "string") {
       throw new Error(`subnetId type is not string: ${typeof subnetId}`);
     }
-    if (typeof coIpPoolId !== 'string') {
+    if (typeof coIpPoolId !== "string") {
       throw new Error(`coIpPoolId type is not string: ${typeof coIpPoolId}`);
     }
 
@@ -34,7 +34,7 @@ export const modifySubnetConfig = async (
     return {
       RequestId: event.RequestId,
       StackId: event.StackId,
-      Status: 'SUCCESS',
+      Status: "SUCCESS",
       LogicalResourceId: event.LogicalResourceId,
       PhysicalResourceId: `${subnetId}:${coIpPoolId}`,
     };
@@ -42,29 +42,29 @@ export const modifySubnetConfig = async (
     return {
       RequestId: event.RequestId,
       LogicalResourceId: event.LogicalResourceId,
-      PhysicalResourceId: '',
+      PhysicalResourceId: "",
       StackId: event.StackId,
-      Status: 'FAILED',
+      Status: "FAILED",
       Reason: JSON.stringify(error),
     };
   }
 };
 
 export const handler = async (
-  event: lambda.CloudFormationCustomResourceEvent,
+  event: lambda.CloudFormationCustomResourceEvent
 ): Promise<lambda.CloudFormationCustomResourceResponse> => {
   switch (event.RequestType) {
-    case 'Create':
-    case 'Update':
+    case "Create":
+    case "Update":
       // coip pool id か subnet id が変わったときのみ subnet の設定変更が必要となる。
       return modifySubnetConfig(event);
-    case 'Delete':
+    case "Delete":
       return {
         RequestId: event.RequestId,
         LogicalResourceId: event.LogicalResourceId,
         PhysicalResourceId: event.PhysicalResourceId,
         StackId: event.StackId,
-        Status: 'SUCCESS',
+        Status: "SUCCESS",
       };
   }
 
@@ -75,20 +75,18 @@ export const handler = async (
   // デプロイ時にその仕様変更を気付けるようにしておく.
   const requestId = (event as lambda.CloudFormationCustomResourceEvent)
     .RequestId;
-  const stackId = (event as lambda.CloudFormationCustomResourceEvent)
-    .StackId;
+  const stackId = (event as lambda.CloudFormationCustomResourceEvent).StackId;
   const requestType: string = (
     event as lambda.CloudFormationCustomResourceEvent
   ).RequestType;
-  const logicalResourceId = (
-    event as lambda.CloudFormationCustomResourceEvent
-  ).LogicalResourceId;
+  const logicalResourceId = (event as lambda.CloudFormationCustomResourceEvent)
+    .LogicalResourceId;
   return {
     RequestId: requestId,
-    Status: 'FAILED',
+    Status: "FAILED",
     StackId: stackId,
     Reason: `unknown event: ${requestType}`,
     LogicalResourceId: logicalResourceId,
-    PhysicalResourceId: '',
+    PhysicalResourceId: "",
   };
 };
