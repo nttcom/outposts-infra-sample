@@ -18,6 +18,12 @@ importers:
       eslint-plugin-import: 2.25.4_eslint@8.11.0
       typescript: 4.6.2
 
+  packages/subnet:
+    specifiers:
+      typescript: 4.6.2
+    devDependencies:
+      typescript: 4.6.2
+
 packages:
 
   /@eslint/eslintrc/1.2.1:

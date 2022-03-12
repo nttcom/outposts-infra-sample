@@ -1,0 +1,19 @@
+{
+  "name": "subnet",
+  "version": "1.0.0",
+  "description": "subnet に coip をつけるサンプルカスタムリソース",
+  "main": "dist/index.js",
+  "keywords": [
+    "CDK",
+    "subnet",
+    "IaC",
+    "Outposts",
+    "CoIP"
+  ],
+  "author": "Fukuda (NTT Com, IC)",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "typescript": "4.6.2"
+  }
+}
