@@ -23,7 +23,33 @@ export class CustomerOwnedIpAddressPoolAttachment extends Construct {
       props.region === undefined ? undefined : { REGION: props.region };
     const runtime = lambda.Runtime.NODEJS_14_X;
     const handler = new lambda.Function(this, "Handler", {
-      code: lambda.Code.fromAsset(path.join(path.dirname(__dirname), "lambda")),
+      code: lambda.Code.fromAsset(
+        path.join(path.dirname(__dirname), "lambda"),
+        // TypeScript コードは Node.js が解釈できるコードへ変換しなければならないので、
+        // この関数のデプロイをフックして、先にビルドしておく必要がある。
+        // なお、最初にビルドしたコードを S3 に設置するようになっており、
+        // S3 に設置先バケットがなければエラーになる。
+        // この場合、 `cdk bootstrap` コマンドを最初に実行しておくことで作成される。
+        {
+          assetHashType: cdk.AssetHashType.OUTPUT,
+          bundling: {
+            image: runtime.bundlingImage,
+            command: [
+              'bash',
+              '-c',
+              [
+                'mkdir -p /build',
+                'cp * .* /build',
+                'cd /build',
+                'npx pnpm install',
+                'npx tsc -p .',
+                'mkdir -p /asset-output/nodejs',
+                'cp index.js /asset-output/nodejs'
+              ].join(' && '),
+            ]
+          }
+        }
+      ),
       runtime,
       timeout: cdk.Duration.minutes(3),
       handler: "index.handler",
