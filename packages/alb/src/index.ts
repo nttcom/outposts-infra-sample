@@ -38,20 +38,23 @@ export class ApplicationLoadBalancer extends Construct {
           assetHashType: cdk.AssetHashType.OUTPUT,
           bundling: {
             image: runtime.bundlingImage,
+            user: "root",
             command: [
-              'bash',
-              '-c',
+              "bash",
+              "-c",
+              "-O",
+              "extglob",
               [
-                'mkdir -p /build',
-                'cp * .* /build',
-                'cd /build',
-                'npx pnpm install',
-                'npx tsc -p .',
-                'mkdir -p /asset-output/nodejs',
-                'cp index.js /asset-output/nodejs'
-              ].join(' && '),
-            ]
-          }
+                "mkdir -p /build",
+                "cp !(.|..|node_modules) /build",
+                "cd /build",
+                "npx pnpm install",
+                "npx tsc -p .",
+                "mkdir -p /asset-output",
+                "cp index.js /asset-output",
+              ].join(" && "),
+            ],
+          },
         }
       ),
       runtime,
