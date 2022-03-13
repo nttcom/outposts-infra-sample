@@ -14,40 +14,29 @@ const modifySubnetConfig = async (
     | lambda.CloudFormationCustomResourceUpdateEvent
 ): Promise<lambda.CloudFormationCustomResourceResponse> => {
   const { subnetId, coIpPoolId } = event.ResourceProperties;
-  try {
-    if (typeof subnetId !== "string") {
-      throw new Error(`subnetId type is not string: ${typeof subnetId}`);
-    }
-    if (typeof coIpPoolId !== "string") {
-      throw new Error(`coIpPoolId type is not string: ${typeof coIpPoolId}`);
-    }
-
-    const param: aws.EC2.ModifySubnetAttributeRequest = {
-      SubnetId: subnetId,
-      MapCustomerOwnedIpOnLaunch: {
-        Value: true,
-      },
-      CustomerOwnedIpv4Pool: coIpPoolId,
-    };
-    await ec2.modifySubnetAttribute(param).promise();
-
-    return {
-      RequestId: event.RequestId,
-      StackId: event.StackId,
-      Status: "SUCCESS",
-      LogicalResourceId: event.LogicalResourceId,
-      PhysicalResourceId: `${subnetId}:${coIpPoolId}`,
-    };
-  } catch (error) {
-    return {
-      RequestId: event.RequestId,
-      LogicalResourceId: event.LogicalResourceId,
-      PhysicalResourceId: "",
-      StackId: event.StackId,
-      Status: "FAILED",
-      Reason: JSON.stringify(error),
-    };
+  if (typeof subnetId !== "string") {
+    throw new Error(`subnetId type is not string: ${typeof subnetId}`);
   }
+  if (typeof coIpPoolId !== "string") {
+    throw new Error(`coIpPoolId type is not string: ${typeof coIpPoolId}`);
+  }
+
+  const param: aws.EC2.ModifySubnetAttributeRequest = {
+    SubnetId: subnetId,
+    MapCustomerOwnedIpOnLaunch: {
+      Value: true,
+    },
+    CustomerOwnedIpv4Pool: coIpPoolId,
+  };
+  await ec2.modifySubnetAttribute(param).promise();
+
+  return {
+    RequestId: event.RequestId,
+    StackId: event.StackId,
+    Status: "SUCCESS",
+    LogicalResourceId: event.LogicalResourceId,
+    PhysicalResourceId: `${subnetId}:${coIpPoolId}`,
+  };
 };
 
 export const handler = async (

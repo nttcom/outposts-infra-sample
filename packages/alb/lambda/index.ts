@@ -8,7 +8,7 @@ const elb = new aws.ELBv2({
 });
 
 type ApplicationLoadBalancerProps = {
-  securityGroupId: string;
+  securityGroupId?: string;
   coIpPoolId: string;
   subnetIds: string[];
   name: string;
@@ -21,7 +21,9 @@ const createApplicationLoadBalancer = async (
 ): Promise<ApplicationLoadBalancerAttribute> => {
   const resp = await elb
     .createLoadBalancer({
-      SecurityGroups: [props.securityGroupId],
+      SecurityGroups: props.securityGroupId === undefined
+        ? []
+        : [props.securityGroupId],
       Subnets: props.subnetIds,
       CustomerOwnedIpv4Pool: props.coIpPoolId,
       Name: props.name,
@@ -58,76 +60,51 @@ const createHandler = async (
 ): Promise<lambda.CloudFormationCustomResourceResponse> => {
   const { securityGroupId, coIpPoolId, subnetIds, name } =
     event.ResourceProperties;
-  try {
-    if (typeof securityGroupId !== "string") {
-      throw new Error(
-        `securityGroupId type is not string: ${typeof securityGroupId}`
-      );
-    }
-    if (typeof coIpPoolId !== "string") {
-      throw new Error(`coIpPoolId type is not string: ${typeof coIpPoolId}`);
-    }
-    if (!isStringArray(subnetIds)) {
-      throw new Error("subnetIds type is not string[]");
-    }
-    if (typeof name !== "string") {
-      throw new Error(`name type is not string: ${typeof name}`);
-    }
-
-    const alb = await createApplicationLoadBalancer({
-      securityGroupId,
-      coIpPoolId,
-      subnetIds,
-      name,
-    });
-    return {
-      Status: "SUCCESS",
-      StackId: event.StackId,
-      LogicalResourceId: event.LogicalResourceId,
-      PhysicalResourceId: alb.arn,
-      RequestId: event.RequestId,
-    };
-  } catch (error) {
-    return {
-      Status: "FAILED",
-      StackId: event.StackId,
-      LogicalResourceId: event.LogicalResourceId,
-      Reason: JSON.stringify(error),
-      // Create イベントのときは PhysicalResourceId は何を返してもいいので空文字列を返す。
-      // 一方、 Update イベントのときは前回作成した PhysicalResourceId を返す必要がある。
-      PhysicalResourceId:
-        event.RequestType === "Create" ? "" : event.PhysicalResourceId,
-      RequestId: event.RequestId,
-    };
+  if (!["string", "undefined"].includes(typeof securityGroupId)) {
+    throw new Error(
+      `securityGroupId type is not string: ${typeof securityGroupId}`
+    );
   }
+  if (typeof coIpPoolId !== "string") {
+    throw new Error(`coIpPoolId type is not string: ${typeof coIpPoolId}`);
+  }
+  if (!isStringArray(subnetIds)) {
+    throw new Error("subnetIds type is not string[]");
+  }
+  if (typeof name !== "string") {
+    throw new Error(`name type is not string: ${typeof name}`);
+  }
+
+  const alb = await createApplicationLoadBalancer({
+    securityGroupId,
+    coIpPoolId,
+    subnetIds,
+    name,
+  });
+  return {
+    Status: "SUCCESS",
+    StackId: event.StackId,
+    LogicalResourceId: event.LogicalResourceId,
+    PhysicalResourceId: alb.arn,
+    RequestId: event.RequestId,
+  };
 };
 
 const deleteHandler = async (
   event: lambda.CloudFormationCustomResourceDeleteEvent
 ): Promise<lambda.CloudFormationCustomResourceResponse> => {
-  try {
-    await elb
-      .deleteLoadBalancer({
-        LoadBalancerArn: event.PhysicalResourceId,
-      })
-      .promise();
-    return {
-      Status: "SUCCESS",
-      RequestId: event.RequestId,
-      LogicalResourceId: event.LogicalResourceId,
-      PhysicalResourceId: event.PhysicalResourceId,
-      StackId: event.StackId,
-    };
-  } catch (error) {
-    return {
-      Status: "FAILED",
-      Reason: JSON.stringify(error),
-      StackId: event.StackId,
-      PhysicalResourceId: event.PhysicalResourceId,
-      LogicalResourceId: event.LogicalResourceId,
-      RequestId: event.RequestId,
-    };
-  }
+  await elb
+    .deleteLoadBalancer({
+      LoadBalancerArn: event.PhysicalResourceId,
+    })
+    .promise();
+  return {
+    Status: "SUCCESS",
+    RequestId: event.RequestId,
+    LogicalResourceId: event.LogicalResourceId,
+    PhysicalResourceId: event.PhysicalResourceId,
+    StackId: event.StackId,
+  };
 };
 
 export const handler = async (
