@@ -1,5 +1,5 @@
-import * as lambda from "aws-lambda";
-import * as aws from "aws-sdk";
+import * as lambda from 'aws-lambda';
+import * as aws from 'aws-sdk';
 
 // ModifySubnetAttribute を呼び出すためのクライアントを初期化しておく
 const elb = new aws.ELBv2({
@@ -17,61 +17,60 @@ type ApplicationLoadBalancerAttribute = {
   arn: string;
 };
 const createApplicationLoadBalancer = async (
-  props: ApplicationLoadBalancerProps
+  props: ApplicationLoadBalancerProps,
 ): Promise<ApplicationLoadBalancerAttribute> => {
   const resp = await elb
     .createLoadBalancer({
-      SecurityGroups: props.securityGroupId === undefined
-        ? []
-        : [props.securityGroupId],
+      SecurityGroups:
+        props.securityGroupId === undefined ? [] : [props.securityGroupId],
       Subnets: props.subnetIds,
       CustomerOwnedIpv4Pool: props.coIpPoolId,
       Name: props.name,
     })
     .promise();
   if (resp.LoadBalancers === undefined) {
-    throw new Error("cannot find created load balancer");
+    throw new Error('cannot find created load balancer');
   }
   switch (resp.LoadBalancers.length) {
     case 0:
-      throw new Error("cannot find created load balancer");
+      throw new Error('cannot find created load balancer');
     case 1:
       break;
     default:
-      throw new Error("multiple load balancer created");
+      throw new Error('multiple load balancer created');
   }
   const alb = resp.LoadBalancers[0];
 
   if (alb.LoadBalancerArn === undefined) {
-    throw new Error("cannot get load balancer arn");
+    throw new Error('cannot get load balancer arn');
   }
   return {
     arn: alb.LoadBalancerArn,
   };
 };
 
-const isStringArray = (arg: unknown): arg is string[] =>
-  Array.isArray(arg) && arg.every((e) => typeof e === "string");
+const isStringArray = (arg: unknown): arg is string[] => Array.isArray(arg) && arg.every((e) => typeof e === 'string');
 
 const createHandler = async (
   event:
     | lambda.CloudFormationCustomResourceCreateEvent
-    | lambda.CloudFormationCustomResourceUpdateEvent
+    | lambda.CloudFormationCustomResourceUpdateEvent,
 ): Promise<lambda.CloudFormationCustomResourceResponse> => {
-  const { securityGroupId, coIpPoolId, subnetIds, name } =
-    event.ResourceProperties;
-  if (!["string", "undefined"].includes(typeof securityGroupId)) {
+  const {
+    securityGroupId, coIpPoolId, subnetIds, name,
+  } = event.ResourceProperties;
+  if (!['string', 'undefined'].includes(typeof securityGroupId)) {
     throw new Error(
-      `securityGroupId type is not string: ${typeof securityGroupId}`
+      `securityGroupId type is not string: ${typeof securityGroupId}`,
     );
   }
-  if (typeof coIpPoolId !== "string") {
+  if (typeof coIpPoolId !== 'string') {
     throw new Error(`coIpPoolId type is not string: ${typeof coIpPoolId}`);
   }
   if (!isStringArray(subnetIds)) {
-    throw new Error("subnetIds type is not string[]");
+    throw new Error('subnetIds type is not string[]');
   }
-  if (typeof name !== "string") {
+  if (typeof name !== 'string') {
     throw new Error(`name type is not string: ${typeof name}`);
   }
 
@@ -82,7 +81,7 @@ const createHandler = async (
     name,
   });
   return {
-    Status: "SUCCESS",
+    Status: 'SUCCESS',
     StackId: event.StackId,
     LogicalResourceId: event.LogicalResourceId,
     PhysicalResourceId: alb.arn,
@@ -91,7 +90,7 @@ const createHandler = async (
 };
 
 const deleteHandler = async (
-  event: lambda.CloudFormationCustomResourceDeleteEvent
+  event: lambda.CloudFormationCustomResourceDeleteEvent,
 ): Promise<lambda.CloudFormationCustomResourceResponse> => {
   await elb
     .deleteLoadBalancer({
@@ -99,7 +98,7 @@ const deleteHandler = async (
     })
     .promise();
   return {
-    Status: "SUCCESS",
+    Status: 'SUCCESS',
     RequestId: event.RequestId,
     LogicalResourceId: event.LogicalResourceId,
     PhysicalResourceId: event.PhysicalResourceId,
@@ -108,15 +107,15 @@ const deleteHandler = async (
 };
 
 export const handler = async (
-  event: lambda.CloudFormationCustomResourceEvent
+  event: lambda.CloudFormationCustomResourceEvent,
 ): Promise<lambda.CloudFormationCustomResourceResponse> => {
   switch (event.RequestType) {
-    case "Create":
-    case "Update":
+    case 'Create':
+    case 'Update':
       // Create イベントでも Update イベントでも Load Balancer を
       // つくるだけでいいので差分がほどんとないので関数化している。
       return createHandler(event);
-    case "Delete":
+    case 'Delete':
       return deleteHandler(event);
   }
 
@@ -135,10 +134,10 @@ export const handler = async (
     .LogicalResourceId;
   return {
     RequestId: requestId,
-    Status: "FAILED",
+    Status: 'FAILED',
     StackId: stackId,
     Reason: `unknown event: ${requestType}`,
     LogicalResourceId: logicalResourceId,
-    PhysicalResourceId: "",
+    PhysicalResourceId: '',
   };
 };

@@ -1,9 +1,9 @@
-import { Construct } from "constructs";
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as cr from "aws-cdk-lib/custom-resources";
-import * as cdk from "aws-cdk-lib";
-import * as iam from "aws-cdk-lib/aws-iam";
-import * as path from "path";
+import { Construct } from 'constructs';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as cr from 'aws-cdk-lib/custom-resources';
+import * as cdk from 'aws-cdk-lib';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as path from 'path';
 
 export type ApplicationLoadBalancerProps = {
   customerOwnedIpAddressPoolId: string;
@@ -18,17 +18,16 @@ export class ApplicationLoadBalancer extends Construct {
   constructor(
     scope: Construct,
     id: string,
-    props: ApplicationLoadBalancerProps
+    props: ApplicationLoadBalancerProps,
   ) {
     super(scope, id);
 
     // ライフサイクルのハンドラを定義する
-    const environment: lambda.FunctionProps["environment"] =
-      props.region === undefined ? undefined : { REGION: props.region };
+    const environment: lambda.FunctionProps['environment'] = props.region === undefined ? undefined : { REGION: props.region };
     const runtime = lambda.Runtime.NODEJS_14_X;
-    const handler = new lambda.Function(this, "Handler", {
+    const handler = new lambda.Function(this, 'Handler', {
       code: lambda.Code.fromAsset(
-        path.join(path.dirname(__dirname), "lambda"),
+        path.join(path.dirname(__dirname), 'lambda'),
         // TypeScript コードは Node.js が解釈できるコードへ変換しなければならないので、
         // この関数のデプロイをフックして、先にビルドしておく必要がある。
         // なお、最初にビルドしたコードを S3 に設置するようになっており、
@@ -38,50 +37,50 @@ export class ApplicationLoadBalancer extends Construct {
           assetHashType: cdk.AssetHashType.OUTPUT,
           bundling: {
             image: runtime.bundlingImage,
-            user: "root",
+            user: 'root',
             command: [
-              "bash",
-              "-c",
-              "-O",
-              "extglob",
+              'bash',
+              '-c',
+              '-O',
+              'extglob',
               [
-                "mkdir -p /build",
-                "cp !(.|..|node_modules) /build",
-                "cd /build",
-                "npx pnpm install",
-                "npx tsc -p .",
-                "mkdir -p /asset-output",
-                "cp index.js /asset-output",
-              ].join(" && "),
+                'mkdir -p /build',
+                'cp !(.|..|node_modules) /build',
+                'cd /build',
+                'npx pnpm install',
+                'npx tsc -p .',
+                'mkdir -p /asset-output',
+                'cp index.js /asset-output',
+              ].join(' && '),
             ],
           },
-        }
+        },
       ),
       runtime,
       timeout: cdk.Duration.minutes(15),
-      handler: "index.handler",
+      handler: 'index.handler',
       initialPolicy: [
         new iam.PolicyStatement({
           actions: [
-            "elasticloadbalancing:CreateLoadBalancer",
-            "elasticloadbalancing:DeleteLoadBalancer",
+            'elasticloadbalancing:CreateLoadBalancer',
+            'elasticloadbalancing:DeleteLoadBalancer',
             // customer owned IP address を ELB につける場合、
             // LoadBalancer デプロイ中に customer owned IP address の情報を
             // 必要とし、これら API を呼び出すため、 Lambda に権限をつけておく。
-            "ec2:DescribeCoipPools",
-            "ec2:GetCoipPoolUsage",
+            'ec2:DescribeCoipPools',
+            'ec2:GetCoipPoolUsage',
           ],
-          resources: ["*"],
+          resources: ['*'],
         }),
       ],
       environment,
     });
 
     // あとは custom resource を利用するボイラープレート
-    const provider = new cr.Provider(this, "Provider", {
+    const provider = new cr.Provider(this, 'Provider', {
       onEventHandler: handler,
     });
-    this.resource = new cdk.CustomResource(this, "Resource", {
+    this.resource = new cdk.CustomResource(this, 'Resource', {
       serviceToken: provider.serviceToken,
       properties: {
         subnetIds: props.subnetIds,

@@ -1,5 +1,5 @@
-import * as lambda from "aws-lambda";
-import * as aws from "aws-sdk";
+import * as lambda from 'aws-lambda';
+import * as aws from 'aws-sdk';
 
 // ModifySubnetAttribute を呼び出すためのクライアントを初期化しておく
 const ec2 = new aws.EC2({
@@ -11,13 +11,13 @@ const ec2 = new aws.EC2({
 const modifySubnetConfig = async (
   event:
     | lambda.CloudFormationCustomResourceCreateEvent
-    | lambda.CloudFormationCustomResourceUpdateEvent
+    | lambda.CloudFormationCustomResourceUpdateEvent,
 ): Promise<lambda.CloudFormationCustomResourceResponse> => {
   const { subnetId, coIpPoolId } = event.ResourceProperties;
-  if (typeof subnetId !== "string") {
+  if (typeof subnetId !== 'string') {
     throw new Error(`subnetId type is not string: ${typeof subnetId}`);
   }
-  if (typeof coIpPoolId !== "string") {
+  if (typeof coIpPoolId !== 'string') {
     throw new Error(`coIpPoolId type is not string: ${typeof coIpPoolId}`);
   }
 
@@ -33,27 +33,27 @@ const modifySubnetConfig = async (
   return {
     RequestId: event.RequestId,
     StackId: event.StackId,
-    Status: "SUCCESS",
+    Status: 'SUCCESS',
     LogicalResourceId: event.LogicalResourceId,
     PhysicalResourceId: `${subnetId}:${coIpPoolId}`,
   };
 };
 
 export const handler = async (
-  event: lambda.CloudFormationCustomResourceEvent
+  event: lambda.CloudFormationCustomResourceEvent,
 ): Promise<lambda.CloudFormationCustomResourceResponse> => {
   switch (event.RequestType) {
-    case "Create":
-    case "Update":
+    case 'Create':
+    case 'Update':
       // coip pool id か subnet id が変わったときのみ subnet の設定変更が必要となる。
       return modifySubnetConfig(event);
-    case "Delete":
+    case 'Delete':
       return {
         RequestId: event.RequestId,
         LogicalResourceId: event.LogicalResourceId,
         PhysicalResourceId: event.PhysicalResourceId,
         StackId: event.StackId,
-        Status: "SUCCESS",
+        Status: 'SUCCESS',
       };
   }
 
@@ -72,10 +72,10 @@ export const handler = async (
     .LogicalResourceId;
   return {
     RequestId: requestId,
-    Status: "FAILED",
+    Status: 'FAILED',
     StackId: stackId,
     Reason: `unknown event: ${requestType}`,
     LogicalResourceId: logicalResourceId,
-    PhysicalResourceId: "",
+    PhysicalResourceId: '',
   };
 };
